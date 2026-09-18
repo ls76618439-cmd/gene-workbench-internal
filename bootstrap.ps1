@@ -9,6 +9,18 @@ function Fail([string]$Message) {
   exit 1
 }
 
+function Get-Sha256([string]$Path) {
+  $sha = [System.Security.Cryptography.SHA256]::Create()
+  $stream = [System.IO.File]::OpenRead($Path)
+  try {
+    $hash = $sha.ComputeHash($stream)
+  } finally {
+    $stream.Dispose()
+    $sha.Dispose()
+  }
+  return (-join ($hash | ForEach-Object { $_.ToString("x2") }))
+}
+
 if ($env:OS -ne "Windows_NT") {
   Fail "Gene Workbench Company Edition currently supports Windows only."
 }
@@ -45,7 +57,7 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path $assetPath)) {
   Fail "Failed to download $assetName from GitHub Release $($manifest.tag)."
 }
 
-$actualSha = (Get-FileHash -Algorithm SHA256 $assetPath).Hash.ToLowerInvariant()
+$actualSha = (Get-Sha256 $assetPath).ToLowerInvariant()
 if ($actualSha -ne $expectedSha) {
   Fail "SHA256 mismatch. Expected $expectedSha but got $actualSha."
 }
