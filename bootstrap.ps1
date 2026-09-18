@@ -97,11 +97,14 @@ if ([System.IO.Path]::GetExtension($assetPath).ToLowerInvariant() -eq ".zip") {
   if ($proc.ExitCode -ne 0) { Fail "Installer exited with code $($proc.ExitCode)." }
 }
 
-$installExe = Join-Path (Join-Path $env:LOCALAPPDATA "GeneWorkbench") $executableName
+$appDir = Join-Path $env:LOCALAPPDATA "GeneWorkbench"
+$installExe = Join-Path $appDir $executableName
+$primer3Core = Join-Path $appDir "primer3_core.exe"
 $skillPath = Join-Path $env:USERPROFILE ".workbuddy\skills\gene-workbench\SKILL.md"
 $mcpPath = Join-Path $env:USERPROFILE ".workbuddy\mcp.json"
 
 if (-not (Test-Path $installExe)) { Fail "Installed Gene Workbench executable was not found: $installExe" }
+if (-not (Test-Path $primer3Core)) { Fail "Installed Primer3 core executable was not found: $primer3Core" }
 if (-not (Test-Path $skillPath)) { Fail "Gene Workbench Skill was not found." }
 if (-not (Test-Path $mcpPath)) { Fail "WorkBuddy mcp.json was not found." }
 
@@ -130,4 +133,5 @@ Write-Output "VERSION=$($manifest.version)"
 Write-Output "MCP=$mcpPath"
 Write-Output "SKILL=$skillPath"
 Write-Output "EXE=$installExe"
+Write-Output "PRIMER3_CORE=$primer3Core"
 Write-Output "Restart or reload WorkBuddy once, then call gene-workbench tool_status for runtime discovery verification."

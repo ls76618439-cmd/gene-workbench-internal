@@ -37,6 +37,7 @@ VERSION=1.2.0
 
 Then verify:
 - `%LOCALAPPDATA%\GeneWorkbench\GeneWorkbench-1.2.0.exe` exists
+- `%LOCALAPPDATA%\GeneWorkbench\primer3_core.exe` exists
 - `~\.workbuddy\mcp.json` contains `gene-workbench`
 - `~\.workbuddy\skills\gene-workbench\SKILL.md` exists
 

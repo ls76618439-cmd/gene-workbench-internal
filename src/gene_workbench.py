@@ -4,6 +4,7 @@ import copy
 import difflib
 import hashlib
 import os
+import subprocess
 import sys
 import traceback
 from pathlib import Path
@@ -24,9 +25,8 @@ from pydna.assembly2 import (
     restriction_ligation_assembly as pydna_restriction_ligation_assembly,
 )
 from pydna.dseqrecord import Dseqrecord
-from pydna.design import assembly_fragments as pydna_assembly_fragments, primer_design as pydna_primer_design
+from pydna.design import assembly_fragments as pydna_assembly_fragments, primer_design as pydna_primer_design, tm_default as pydna_tm_default
 from pydna.primer import Primer
-from primer3.bindings import calc_hairpin, calc_homodimer, calc_heterodimer, calc_tm, design_primers as primer3_design_primers
 
 APP_HOME = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "GeneWorkbench"
 DATA = APP_HOME / "data"
@@ -269,20 +269,85 @@ def _golden_gate_enzyme_objects(enzymes: list[str], allow_blunt: bool) -> tuple[
     return objs, profiles
 
 
+def _runtime_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent
+
+
+def _primer3_core_path() -> Path:
+    env_path = os.environ.get("PRIMER3_CORE")
+    candidates = []
+    if env_path:
+        candidates.append(Path(env_path))
+    candidates.extend(
+        [
+            _runtime_dir() / "primer3_core.exe",
+            Path(sys.prefix) / "Lib" / "site-packages" / "primer3" / "src" / "libprimer3" / "primer3_core.exe",
+        ]
+    )
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(
+        "primer3_core.exe was not found. Expected it beside GeneWorkbench.exe or in the active Python environment."
+    )
+
+
+def _primer3_core(params: dict[str, Any]) -> dict[str, str]:
+    lines = []
+    for key, value in params.items():
+        if isinstance(value, bool):
+            value = 1 if value else 0
+        lines.append(f"{key}={value}")
+    lines.append("=")
+    payload = "\n".join(lines) + "\n"
+    completed = subprocess.run(
+        [str(_primer3_core_path())],
+        input=payload,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(
+            f"primer3_core failed with exit code {completed.returncode}: {completed.stderr.strip()}"
+        )
+    result: dict[str, str] = {}
+    for line in completed.stdout.splitlines():
+        if line == "=" or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        result[key] = value
+    if result.get("PRIMER_ERROR"):
+        raise ValueError(f"Primer3 error: {result['PRIMER_ERROR']}")
+    return result
+
+
+def _as_int(value: str | None) -> int | None:
+    if value is None or value == "":
+        return None
+    return int(float(value))
+
+
+def _as_float(value: str | None) -> float | None:
+    if value is None or value == "":
+        return None
+    return float(value)
+
+
 def _primer_metrics(full_sequence: str, annealing_sequence: str) -> dict[str, Any]:
     full_sequence = str(full_sequence).upper()
     annealing_sequence = str(annealing_sequence).upper()
-    hp = calc_hairpin(full_sequence)
-    hd = calc_homodimer(full_sequence)
     return {
         "full_sequence_5to3": full_sequence,
         "annealing_sequence_5to3": annealing_sequence,
         "tail_sequence_5to3": full_sequence[: max(0, len(full_sequence) - len(annealing_sequence))],
         "full_length": len(full_sequence),
         "annealing_length": len(annealing_sequence),
-        "annealing_tm_c": round(float(calc_tm(annealing_sequence)), 2),
-        "hairpin_tm_c": round(float(hp.tm), 2),
-        "homodimer_tm_c": round(float(hd.tm), 2),
+        "annealing_tm_c": round(float(pydna_tm_default(annealing_sequence)), 2),
+        "tm_model": "pydna.design.tm_default (Biopython nearest-neighbor model with pydna defaults)",
+        "full_oligo_secondary_structure_assessed": False,
     }
 
 
@@ -595,53 +660,63 @@ def restriction_analyze(sequence_id: str, enzymes: list[str]) -> dict[str, Any]:
 
 @mcp.tool()
 def primer_design(sequence_id: str, target_start: int, target_length: int, product_min: int = 120, product_max: int = 1200, num_return: int = 5) -> dict[str, Any]:
-    """Design candidate primer pairs around a 1-based target using Primer3 and return Primer3 quality metrics."""
+    """Design candidate primer pairs around a 1-based target using Primer3 core and return Primer3 quality metrics."""
     record = _load(sequence_id)
     template = str(record.seq).upper()
     if target_start < 1 or target_length < 1 or target_start + target_length - 1 > len(template):
         raise ValueError("target must be a valid 1-based interval inside the template")
     if product_min < 1 or product_max < product_min:
         raise ValueError("product size range is invalid")
-    args = {"SEQUENCE_ID": sequence_id, "SEQUENCE_TEMPLATE": template, "SEQUENCE_TARGET": [target_start - 1, target_length]}
-    global_args = {
-        "PRIMER_OPT_SIZE": 20,
-        "PRIMER_MIN_SIZE": 18,
-        "PRIMER_MAX_SIZE": 25,
-        "PRIMER_OPT_TM": 60.0,
-        "PRIMER_MIN_TM": 57.0,
-        "PRIMER_MAX_TM": 63.0,
-        "PRIMER_MIN_GC": 35.0,
-        "PRIMER_MAX_GC": 65.0,
-        "PRIMER_PRODUCT_SIZE_RANGE": [[product_min, product_max]],
-        "PRIMER_NUM_RETURN": num_return,
-    }
-    result = primer3_design_primers(args, global_args)
+    if num_return < 1:
+        raise ValueError("num_return must be positive")
+
+    result = _primer3_core(
+        {
+            "SEQUENCE_ID": sequence_id,
+            "SEQUENCE_TEMPLATE": template,
+            "SEQUENCE_TARGET": f"{target_start - 1},{target_length}",
+            "PRIMER_TASK": "generic",
+            "PRIMER_OPT_SIZE": 20,
+            "PRIMER_MIN_SIZE": 18,
+            "PRIMER_MAX_SIZE": 25,
+            "PRIMER_OPT_TM": 60.0,
+            "PRIMER_MIN_TM": 57.0,
+            "PRIMER_MAX_TM": 63.0,
+            "PRIMER_MIN_GC": 35.0,
+            "PRIMER_MAX_GC": 65.0,
+            "PRIMER_PRODUCT_SIZE_RANGE": f"{product_min}-{product_max}",
+            "PRIMER_NUM_RETURN": num_return,
+            "PRIMER_EXPLAIN_FLAG": 1,
+        }
+    )
+
     pairs = []
-    for i in range(int(result.get("PRIMER_PAIR_NUM_RETURNED", 0))):
+    for i in range(_as_int(result.get("PRIMER_PAIR_NUM_RETURNED")) or 0):
         pairs.append(
             {
                 "left": result.get(f"PRIMER_LEFT_{i}_SEQUENCE"),
                 "right": result.get(f"PRIMER_RIGHT_{i}_SEQUENCE"),
                 "primer3_left_coordinate": result.get(f"PRIMER_LEFT_{i}"),
                 "primer3_right_coordinate": result.get(f"PRIMER_RIGHT_{i}"),
-                "left_tm": result.get(f"PRIMER_LEFT_{i}_TM"),
-                "right_tm": result.get(f"PRIMER_RIGHT_{i}_TM"),
-                "left_gc_percent": result.get(f"PRIMER_LEFT_{i}_GC_PERCENT"),
-                "right_gc_percent": result.get(f"PRIMER_RIGHT_{i}_GC_PERCENT"),
-                "left_self_any_th": result.get(f"PRIMER_LEFT_{i}_SELF_ANY_TH"),
-                "right_self_any_th": result.get(f"PRIMER_RIGHT_{i}_SELF_ANY_TH"),
-                "left_self_end_th": result.get(f"PRIMER_LEFT_{i}_SELF_END_TH"),
-                "right_self_end_th": result.get(f"PRIMER_RIGHT_{i}_SELF_END_TH"),
-                "left_hairpin_th": result.get(f"PRIMER_LEFT_{i}_HAIRPIN_TH"),
-                "right_hairpin_th": result.get(f"PRIMER_RIGHT_{i}_HAIRPIN_TH"),
-                "pair_compl_any_th": result.get(f"PRIMER_PAIR_{i}_COMPL_ANY_TH"),
-                "pair_compl_end_th": result.get(f"PRIMER_PAIR_{i}_COMPL_END_TH"),
-                "pair_penalty": result.get(f"PRIMER_PAIR_{i}_PENALTY"),
-                "product_size": result.get(f"PRIMER_PAIR_{i}_PRODUCT_SIZE"),
+                "left_tm": _as_float(result.get(f"PRIMER_LEFT_{i}_TM")),
+                "right_tm": _as_float(result.get(f"PRIMER_RIGHT_{i}_TM")),
+                "left_gc_percent": _as_float(result.get(f"PRIMER_LEFT_{i}_GC_PERCENT")),
+                "right_gc_percent": _as_float(result.get(f"PRIMER_RIGHT_{i}_GC_PERCENT")),
+                "left_self_any_th": _as_float(result.get(f"PRIMER_LEFT_{i}_SELF_ANY_TH")),
+                "right_self_any_th": _as_float(result.get(f"PRIMER_RIGHT_{i}_SELF_ANY_TH")),
+                "left_self_end_th": _as_float(result.get(f"PRIMER_LEFT_{i}_SELF_END_TH")),
+                "right_self_end_th": _as_float(result.get(f"PRIMER_RIGHT_{i}_SELF_END_TH")),
+                "left_hairpin_th": _as_float(result.get(f"PRIMER_LEFT_{i}_HAIRPIN_TH")),
+                "right_hairpin_th": _as_float(result.get(f"PRIMER_RIGHT_{i}_HAIRPIN_TH")),
+                "pair_compl_any_th": _as_float(result.get(f"PRIMER_PAIR_{i}_COMPL_ANY_TH")),
+                "pair_compl_end_th": _as_float(result.get(f"PRIMER_PAIR_{i}_COMPL_END_TH")),
+                "pair_penalty": _as_float(result.get(f"PRIMER_PAIR_{i}_PENALTY")),
+                "product_size": _as_int(result.get(f"PRIMER_PAIR_{i}_PRODUCT_SIZE")),
             }
         )
     return {
         "sequence_id": sequence_id,
+        "engine": "Primer3 core",
         "pair_count": len(pairs),
         "pairs": pairs,
         "primer3_explain": {
@@ -777,13 +852,11 @@ def gibson_primer_design(
         f_anneal = str(amp.forward_primer.footprint).upper()
         r_anneal = str(amp.reverse_primer.footprint).upper()
         simulated = pydna_pcr(Primer(f_full), Primer(r_full), _to_dseqrecord(source_record), limit=13)
-        pair_dimer = calc_heterodimer(f_full, r_full)
         rows.append(
             {
                 "source_sequence_id": sid,
                 "forward_primer": _primer_metrics(f_full, f_anneal),
                 "reverse_primer": _primer_metrics(r_full, r_anneal),
-                "primer_pair_heterodimer_tm_c": round(float(pair_dimer.tm), 2),
                 "simulated_pcr_product_length_bp": len(simulated),
             }
         )
@@ -797,7 +870,7 @@ def gibson_primer_design(
         "target_annealing_tm_c": target_tm,
         "designs": rows,
         "warnings": warning_messages,
-        "scope": "Candidate overlap-tailed primers computed for the supplied fragment order. PCR simulation uses only the supplied template; genome-wide or host-wide off-target specificity and wet-lab efficiency are not assessed.",
+        "scope": "Candidate overlap-tailed primers computed for the supplied fragment order. PCR simulation uses only the supplied template; genome-wide or host-wide off-target specificity, wet-lab efficiency, and full-oligo hairpin/dimer risk are not assessed by this tool.",
     }
 
 
@@ -1044,6 +1117,13 @@ def tool_status() -> dict[str, Any]:
         "data_dir": str(DATA),
         "outputs_dir": str(OUTPUTS),
         "seqkit_installed": (exe_dir / "seqkit.exe").exists(),
+        "primer3_core_installed": any(
+            p.exists()
+            for p in [
+                exe_dir / "primer3_core.exe",
+                Path(sys.prefix) / "Lib" / "site-packages" / "primer3" / "src" / "libprimer3" / "primer3_core.exe",
+            ]
+        ),
         "transport": "stdio",
     }
 

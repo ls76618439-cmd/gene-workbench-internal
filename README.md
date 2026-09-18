@@ -7,7 +7,7 @@ Internal Windows tool for molecular-biology sequence analysis and common cloning
 - Import GenBank / FASTA / SnapGene DNA files
 - Sequence metadata, GC, topology, feature and CDS inspection
 - Exact sequence search, extraction, and translation
-- Primer3 primer design with quality metrics
+- Primer3 primer design with quality metrics via the bundled `primer3_core.exe` executable
 - PCR simulation on the supplied template
 - Restriction-site analysis with circular-topology handling
 - Insert / delete / replace sequence edits with annotation remapping where possible
@@ -31,7 +31,7 @@ Gene Workbench separates deterministic computation from scientific judgment. Too
 
 Give WorkBuddy this repository URL and say:
 
-> 请严格按照仓库根目录的 WORKBUDDY_INSTALL.md 安装 Gene Workbench，完成后验证 gene-workbench MCP 和 Skill 已安装成功。不要自行改安装方案。
+> 璇蜂弗鏍兼寜鐓т粨搴撴牴鐩綍鐨?WORKBUDDY_INSTALL.md 瀹夎 Gene Workbench锛屽畬鎴愬悗楠岃瘉 gene-workbench MCP 鍜?Skill 宸插畨瑁呮垚鍔熴€備笉瑕佽嚜琛屾敼瀹夎鏂规銆?
 
 For manual installation, download the latest Company ZIP from Releases, extract it, and run `install.cmd`.
 

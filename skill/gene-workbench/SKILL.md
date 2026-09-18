@@ -16,7 +16,6 @@ Use Gene Workbench as a computation layer, not as a substitute for scientific ju
 ## Core principles
 
 - Do not force a tool call for conceptual questions that can be answered accurately without sequence computation.
-- Treat the tool map and usage patterns as navigation aids, not a mandatory workflow. A capable model may combine tools differently when the user's task and evidence support it.
 - Do not force a cloning method. Respect an explicitly requested method. If the method is underdetermined, state the assumptions and present feasible options without calling one "best" unless the user supplied decision criteria.
 - Treat tool output as computation on the supplied sequences and parameters. Do not describe computational feasibility as guaranteed wet-lab success.
 - Preserve warnings, ambiguity, multiple candidate products, and scope limitations returned by tools.
@@ -45,9 +44,9 @@ Use Gene Workbench as a computation layer, not as a substitute for scientific ju
 
 ## Scientific interpretation
 
-- `primer_design` returns Primer3 candidates and quality metrics for the supplied template. Do not claim genome-wide or host-wide specificity unless an external reference/off-target search was actually performed.
+- `primer_design` runs Primer3 core and returns Primer3 candidates and quality metrics for the supplied template. Do not claim genome-wide or host-wide specificity unless an external reference/off-target search was actually performed.
 - `pcr_simulate` models annealing and product formation on the supplied template; it does not establish real PCR efficiency.
-- `gibson_primer_design` designs overlap-tailed primers for the supplied fragment order and simulates those primer pairs on the supplied templates. It does not prove experimental assembly efficiency.
+- `gibson_primer_design` designs overlap-tailed primers for the supplied fragment order and simulates those primer pairs on the supplied templates. Its reported annealing Tm uses the pydna/Biopython nearest-neighbor model with pydna defaults. It does not assess full-oligo hairpin/dimer risk, genome-wide specificity, or experimental assembly efficiency.
 - `golden_gate_assess` reports recognition/cut geometry and site counts. It intentionally does not select a preferred enzyme.
 - `assembly_golden_gate` is for enzymes whose cut geometry is compatible with Golden Gate-style type-IIS assembly. Use `assembly_ligation` for ordinary restriction/ligation.
 - `construct_validate` checks sequence/annotation/CDS consistency. A passing result is not evidence that a physical construct is correct, expresses properly, or functions biologically.

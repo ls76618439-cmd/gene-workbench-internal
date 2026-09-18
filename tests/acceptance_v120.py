@@ -238,9 +238,11 @@ async def main():
 
             status = await call(s, "tool_status", {})
             assert status["version"] == "1.2.0"
+            assert status["primer3_core_installed"] is True
 
             print("PASS_EDIT_STALE_TRANSLATION_REMOVAL")
             print("PASS_CIRCULAR_RESTRICTION_ORIGIN")
+            print("PASS_PRIMER3_CORE_PRESENT")
             print("PASS_PRIMER3_QC")
             print("PASS_PCR", pcrp["product_length_bp"])
             print("PASS_GIBSON", gib["product_count"])

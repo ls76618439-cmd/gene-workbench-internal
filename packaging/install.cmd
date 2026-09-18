@@ -14,10 +14,11 @@ if exist "%APPDIR%\%EXENAME%" (
 copy /Y "%~dp0%EXENAME%" "%APPDIR%\%EXENAME%" >nul || exit /b 11
 :exe_ready
 
-copy /Y "%~dp0seqkit.exe" "%APPDIR%\seqkit.exe" >nul || exit /b 12
-copy /Y "%~dp0configure-workbuddy.ps1" "%APPDIR%\configure-workbuddy.ps1" >nul || exit /b 13
-copy /Y "%~dp0unconfigure-workbuddy.ps1" "%APPDIR%\unconfigure-workbuddy.ps1" >nul || exit /b 14
-copy /Y "%~dp0SKILL.md" "%APPDIR%\skill\gene-workbench\SKILL.md" >nul || exit /b 15
+copy /Y "%~dp0primer3_core.exe" "%APPDIR%\primer3_core.exe" >nul || exit /b 12
+copy /Y "%~dp0seqkit.exe" "%APPDIR%\seqkit.exe" >nul || exit /b 13
+copy /Y "%~dp0configure-workbuddy.ps1" "%APPDIR%\configure-workbuddy.ps1" >nul || exit /b 14
+copy /Y "%~dp0unconfigure-workbuddy.ps1" "%APPDIR%\unconfigure-workbuddy.ps1" >nul || exit /b 15
+copy /Y "%~dp0SKILL.md" "%APPDIR%\skill\gene-workbench\SKILL.md" >nul || exit /b 16
 
 (
   echo @echo off
