@@ -7,12 +7,9 @@ set "EXENAME=GeneWorkbench-1.2.0.exe"
 if not exist "%APPDIR%" mkdir "%APPDIR%"
 if not exist "%APPDIR%\skill\gene-workbench" mkdir "%APPDIR%\skill\gene-workbench"
 
-if exist "%APPDIR%\%EXENAME%" (
-  fc /b "%~dp0%EXENAME%" "%APPDIR%\%EXENAME%" >nul 2>nul
-  if not errorlevel 1 goto exe_ready
+if not exist "%APPDIR%\%EXENAME%" (
+  copy /Y "%~dp0%EXENAME%" "%APPDIR%\%EXENAME%" >nul || exit /b 11
 )
-copy /Y "%~dp0%EXENAME%" "%APPDIR%\%EXENAME%" >nul || exit /b 11
-:exe_ready
 
 copy /Y "%~dp0primer3_core.exe" "%APPDIR%\primer3_core.exe" >nul || exit /b 12
 copy /Y "%~dp0seqkit.exe" "%APPDIR%\seqkit.exe" >nul || exit /b 13
