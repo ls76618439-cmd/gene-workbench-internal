@@ -11,9 +11,8 @@ Install Gene Workbench locally on Windows, register the `gene-workbench` MCP in 
 - Windows
 - WorkBuddy already installed
 - This GitHub repository is accessible to the user
-- GitHub CLI (`gh`) is authenticated for this private repository
 
-If GitHub authentication is the only missing precondition, ask the user to authenticate GitHub once, then continue. Do not ask the user to edit JSON or install Python.
+Do not ask the user to install Python, edit JSON, configure ports, or manually copy Skill files.
 
 ## Install
 
@@ -23,6 +22,8 @@ From a clone of this repository, run:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\bootstrap.ps1
 ```
 
+The bootstrap will install GitHub CLI with winget if it is missing. If GitHub authentication is required for this private repository, ask the user to complete `gh auth login` once and then rerun the bootstrap.
+
 Do not manually edit `~\.workbuddy\mcp.json` unless `bootstrap.ps1` reports a failure.
 
 ## Expected success
@@ -31,6 +32,7 @@ The script must print:
 
 ```text
 GENE_WORKBENCH_INSTALL_OK
+VERSION=1.1.0
 ```
 
 Then verify:
@@ -40,8 +42,8 @@ Then verify:
 
 If WorkBuddy was open during installation, restart or reload WorkBuddy once so it rediscovers the MCP tools.
 
-After reload, use `tool_status` from `gene-workbench`. If it succeeds, report that installation and runtime discovery both passed.
+After reload, call `tool_status` from `gene-workbench`. Expect version `1.1.0`. Then list tools and expect 20 tools. If both checks pass, report that installation and runtime discovery passed.
 
 ## Normal use
 
-For DNA, plasmid, vector, primer, restriction digest, sequence edit or related sequence-analysis requests, use the `gene-workbench` MCP tools instead of manually reasoning over long raw sequences.
+For DNA, plasmid, vector, primer, PCR, restriction digest, cloning, Gibson, Golden Gate, ligation, construct validation, or sequence-editing requests, use the `gene-workbench` MCP tools instead of manually reasoning over long raw sequences.

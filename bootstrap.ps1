@@ -42,7 +42,6 @@ function Resolve-Gh {
   if (Test-Path $candidate) { return $candidate }
   $cmd = Get-Command gh -ErrorAction SilentlyContinue
   if ($cmd) { return $cmd.Source }
-
   Fail "GitHub CLI installation completed but gh.exe could not be located."
 }
 
@@ -69,9 +68,7 @@ if ($LASTEXITCODE -ne 0) {
 $tempRoot = Join-Path $env:TEMP "GeneWorkbenchBootstrap"
 New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
 $assetPath = Join-Path $tempRoot $assetName
-if (Test-Path $assetPath) {
-  Remove-Item -Force $assetPath
-}
+if (Test-Path $assetPath) { Remove-Item -Force $assetPath }
 
 & $ghExe release download $manifest.tag --repo $Repo --pattern $assetName --dir $tempRoot --clobber
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path $assetPath)) {
@@ -83,9 +80,19 @@ if ($actualSha -ne $expectedSha) {
   Fail "SHA256 mismatch. Expected $expectedSha but got $actualSha."
 }
 
-$proc = Start-Process -FilePath $assetPath -ArgumentList "/Q" -Wait -PassThru
-if ($proc.ExitCode -ne 0) {
-  Fail "Installer exited with code $($proc.ExitCode)."
+if ([System.IO.Path]::GetExtension($assetPath).ToLowerInvariant() -eq ".zip") {
+  $extractDir = Join-Path $tempRoot ("package-" + [string]$manifest.version)
+  if (Test-Path $extractDir) { Remove-Item -Recurse -Force $extractDir }
+  New-Item -ItemType Directory -Force -Path $extractDir | Out-Null
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  [System.IO.Compression.ZipFile]::ExtractToDirectory($assetPath, $extractDir)
+  $installCmd = Join-Path $extractDir "install.cmd"
+  if (-not (Test-Path $installCmd)) { Fail "install.cmd is missing from the release package." }
+  & $installCmd
+  if ($LASTEXITCODE -ne 0) { Fail "install.cmd exited with code $LASTEXITCODE." }
+} else {
+  $proc = Start-Process -FilePath $assetPath -ArgumentList "/Q" -Wait -PassThru
+  if ($proc.ExitCode -ne 0) { Fail "Installer exited with code $($proc.ExitCode)." }
 }
 
 $installExe = Join-Path $env:LOCALAPPDATA "GeneWorkbench\GeneWorkbench.exe"
@@ -105,6 +112,7 @@ if ([string]$cfg.mcpServers.'gene-workbench'.command -ne $installExe) {
 }
 
 Write-Output "GENE_WORKBENCH_INSTALL_OK"
+Write-Output "VERSION=$($manifest.version)"
 Write-Output "MCP=$mcpPath"
 Write-Output "SKILL=$skillPath"
 Write-Output "EXE=$installExe"
