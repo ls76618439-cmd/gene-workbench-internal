@@ -97,7 +97,7 @@ if ([System.IO.Path]::GetExtension($assetPath).ToLowerInvariant() -eq ".zip") {
   if ($proc.ExitCode -ne 0) { Fail "Installer exited with code $($proc.ExitCode)." }
 }
 
-$installExe = Join-Path $env:LOCALAPPDATA "GeneWorkbench\GeneWorkbench.exe"
+$installExe = Join-Path (Join-Path $env:LOCALAPPDATA "GeneWorkbench") $executableName
 $skillPath = Join-Path $env:USERPROFILE ".workbuddy\skills\gene-workbench\SKILL.md"
 $mcpPath = Join-Path $env:USERPROFILE ".workbuddy\mcp.json"
 
