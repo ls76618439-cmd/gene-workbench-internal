@@ -21,6 +21,31 @@ function Get-Sha256([string]$Path) {
   return (-join ($hash | ForEach-Object { $_.ToString("x2") }))
 }
 
+function Resolve-Gh {
+  $cmd = Get-Command gh -ErrorAction SilentlyContinue
+  if ($cmd) { return $cmd.Source }
+
+  $candidate = Join-Path $env:ProgramFiles "GitHub CLI\gh.exe"
+  if (Test-Path $candidate) { return $candidate }
+
+  $winget = Get-Command winget -ErrorAction SilentlyContinue
+  if (-not $winget) {
+    Fail "GitHub CLI is missing and winget is unavailable. Install GitHub CLI, then rerun."
+  }
+
+  Write-Output "Installing GitHub CLI..."
+  & winget install --id GitHub.cli --exact --silent --accept-package-agreements --accept-source-agreements
+  if ($LASTEXITCODE -ne 0) {
+    Fail "Failed to install GitHub CLI with winget."
+  }
+
+  if (Test-Path $candidate) { return $candidate }
+  $cmd = Get-Command gh -ErrorAction SilentlyContinue
+  if ($cmd) { return $cmd.Source }
+
+  Fail "GitHub CLI installation completed but gh.exe could not be located."
+}
+
 if ($env:OS -ne "Windows_NT") {
   Fail "Gene Workbench Company Edition currently supports Windows only."
 }
@@ -34,15 +59,11 @@ if (-not (Test-Path $manifestPath)) {
 $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
 $assetName = [string]$manifest.asset
 $expectedSha = ([string]$manifest.sha256).ToLowerInvariant()
+$ghExe = Resolve-Gh
 
-$gh = Get-Command gh -ErrorAction SilentlyContinue
-if (-not $gh) {
-  Fail "GitHub CLI (gh) is required for automatic installation from this private repository."
-}
-
-& gh auth status *> $null
+& $ghExe auth status *> $null
 if ($LASTEXITCODE -ne 0) {
-  Fail "GitHub CLI is not authenticated. Run 'gh auth login' once, then rerun this installer."
+  Fail "GitHub is not authenticated for this private repository. Run 'gh auth login' once, then rerun."
 }
 
 $tempRoot = Join-Path $env:TEMP "GeneWorkbenchBootstrap"
@@ -52,7 +73,7 @@ if (Test-Path $assetPath) {
   Remove-Item -Force $assetPath
 }
 
-& gh release download $manifest.tag --repo $Repo --pattern $assetName --dir $tempRoot --clobber
+& $ghExe release download $manifest.tag --repo $Repo --pattern $assetName --dir $tempRoot --clobber
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path $assetPath)) {
   Fail "Failed to download $assetName from GitHub Release $($manifest.tag)."
 }
