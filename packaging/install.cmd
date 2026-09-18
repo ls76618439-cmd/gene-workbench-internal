@@ -2,13 +2,12 @@
 setlocal
 
 set "APPDIR=%LOCALAPPDATA%\GeneWorkbench"
-
-taskkill /IM GeneWorkbench.exe /F >nul 2>nul
+set "EXENAME=GeneWorkbench-1.1.0.exe"
 
 if not exist "%APPDIR%" mkdir "%APPDIR%"
 if not exist "%APPDIR%\skill\gene-workbench" mkdir "%APPDIR%\skill\gene-workbench"
 
-copy /Y "%~dp0GeneWorkbench.exe" "%APPDIR%\GeneWorkbench.exe" >nul || exit /b 11
+copy /Y "%~dp0%EXENAME%" "%APPDIR%\%EXENAME%" >nul || exit /b 11
 copy /Y "%~dp0seqkit.exe" "%APPDIR%\seqkit.exe" >nul || exit /b 12
 copy /Y "%~dp0configure-workbuddy.ps1" "%APPDIR%\configure-workbuddy.ps1" >nul || exit /b 13
 copy /Y "%~dp0unconfigure-workbuddy.ps1" "%APPDIR%\unconfigure-workbuddy.ps1" >nul || exit /b 14
@@ -16,12 +15,11 @@ copy /Y "%~dp0SKILL.md" "%APPDIR%\skill\gene-workbench\SKILL.md" >nul || exit /b
 
 (
   echo @echo off
-  echo taskkill /IM GeneWorkbench.exe /F ^>nul 2^>nul
   echo powershell -NoProfile -ExecutionPolicy Bypass -File "%%LOCALAPPDATA%%\GeneWorkbench\unconfigure-workbuddy.ps1"
-  echo rmdir /S /Q "%%LOCALAPPDATA%%\GeneWorkbench"
+  echo powershell -NoProfile -ExecutionPolicy Bypass -Command "$d=Join-Path $env:LOCALAPPDATA 'GeneWorkbench'; Get-CimInstance Win32_Process ^| Where-Object { $_.ExecutablePath -like ($d+'\\GeneWorkbench*.exe') } ^| ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Milliseconds 300; Remove-Item $d -Recurse -Force -ErrorAction SilentlyContinue"
 ) > "%APPDIR%\Uninstall-GeneWorkbench.cmd"
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%APPDIR%\configure-workbuddy.ps1" -InstallDir "%APPDIR%" || exit /b 20
+powershell -NoProfile -ExecutionPolicy Bypass -File "%APPDIR%\configure-workbuddy.ps1" -InstallDir "%APPDIR%" -ExecutableName "%EXENAME%" || exit /b 20
 
-echo Gene Workbench installed. Restart or reload WorkBuddy to load the MCP tools.
+echo Gene Workbench 1.1.0 installed. Restart or reload WorkBuddy to load the new MCP tools.
 exit /b 0

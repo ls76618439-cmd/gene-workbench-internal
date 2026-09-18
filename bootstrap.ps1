@@ -57,6 +57,8 @@ if (-not (Test-Path $manifestPath)) {
 
 $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
 $assetName = [string]$manifest.asset
+$executableName = [string]$manifest.executable
+if ([string]::IsNullOrWhiteSpace($executableName)) { $executableName = "GeneWorkbench.exe" }
 $expectedSha = ([string]$manifest.sha256).ToLowerInvariant()
 $ghExe = Resolve-Gh
 
@@ -99,7 +101,7 @@ $installExe = Join-Path $env:LOCALAPPDATA "GeneWorkbench\GeneWorkbench.exe"
 $skillPath = Join-Path $env:USERPROFILE ".workbuddy\skills\gene-workbench\SKILL.md"
 $mcpPath = Join-Path $env:USERPROFILE ".workbuddy\mcp.json"
 
-if (-not (Test-Path $installExe)) { Fail "Installed GeneWorkbench.exe was not found." }
+if (-not (Test-Path $installExe)) { Fail "Installed Gene Workbench executable was not found: $installExe" }
 if (-not (Test-Path $skillPath)) { Fail "Gene Workbench Skill was not found." }
 if (-not (Test-Path $mcpPath)) { Fail "WorkBuddy mcp.json was not found." }
 
