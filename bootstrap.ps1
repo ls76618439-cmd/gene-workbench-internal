@@ -67,10 +67,9 @@ if ($LASTEXITCODE -ne 0) {
   Fail "GitHub is not authenticated for this private repository. Run 'gh auth login' once, then rerun."
 }
 
-$tempRoot = Join-Path $env:TEMP "GeneWorkbenchBootstrap"
+$tempRoot = Join-Path $env:TEMP ("GeneWorkbenchBootstrap-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
 $assetPath = Join-Path $tempRoot $assetName
-if (Test-Path $assetPath) { Remove-Item -Force $assetPath }
 
 & $ghExe release download $manifest.tag --repo $Repo --pattern $assetName --dir $tempRoot --clobber
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path $assetPath)) {
@@ -135,3 +134,4 @@ Write-Output "SKILL=$skillPath"
 Write-Output "EXE=$installExe"
 Write-Output "PRIMER3_CORE=$primer3Core"
 Write-Output "Restart or reload WorkBuddy once, then call gene-workbench tool_status for runtime discovery verification."
+Remove-Item -Recurse -Force $tempRoot -ErrorAction SilentlyContinue
