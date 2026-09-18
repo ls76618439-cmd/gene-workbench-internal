@@ -105,11 +105,23 @@ if (-not (Test-Path $installExe)) { Fail "Installed Gene Workbench executable wa
 if (-not (Test-Path $skillPath)) { Fail "Gene Workbench Skill was not found." }
 if (-not (Test-Path $mcpPath)) { Fail "WorkBuddy mcp.json was not found." }
 
-$cfg = Get-Content $mcpPath -Raw | ConvertFrom-Json
+$cfg = $null
+$commandMatches = $false
+for ($i = 0; $i -lt 10; $i++) {
+  $cfg = Get-Content $mcpPath -Raw | ConvertFrom-Json
+  if ($cfg.mcpServers.'gene-workbench') {
+    $actualCommand = [string]$cfg.mcpServers.'gene-workbench'.command
+    if ($actualCommand -eq $installExe) {
+      $commandMatches = $true
+      break
+    }
+  }
+  Start-Sleep -Milliseconds 300
+}
 if (-not $cfg.mcpServers.'gene-workbench') {
   Fail "gene-workbench MCP entry is missing from WorkBuddy mcp.json."
 }
-if ([string]$cfg.mcpServers.'gene-workbench'.command -ne $installExe) {
+if (-not $commandMatches) {
   Fail "gene-workbench MCP command does not point to the installed executable."
 }
 

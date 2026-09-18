@@ -7,7 +7,13 @@ set "EXENAME=GeneWorkbench-1.1.0.exe"
 if not exist "%APPDIR%" mkdir "%APPDIR%"
 if not exist "%APPDIR%\skill\gene-workbench" mkdir "%APPDIR%\skill\gene-workbench"
 
+if exist "%APPDIR%\%EXENAME%" (
+  fc /b "%~dp0%EXENAME%" "%APPDIR%\%EXENAME%" >nul 2>nul
+  if not errorlevel 1 goto exe_ready
+)
 copy /Y "%~dp0%EXENAME%" "%APPDIR%\%EXENAME%" >nul || exit /b 11
+:exe_ready
+
 copy /Y "%~dp0seqkit.exe" "%APPDIR%\seqkit.exe" >nul || exit /b 12
 copy /Y "%~dp0configure-workbuddy.ps1" "%APPDIR%\configure-workbuddy.ps1" >nul || exit /b 13
 copy /Y "%~dp0unconfigure-workbuddy.ps1" "%APPDIR%\unconfigure-workbuddy.ps1" >nul || exit /b 14
