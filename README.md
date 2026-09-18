@@ -1,26 +1,31 @@
 # Gene Workbench Internal
 
-Internal Windows tool for common molecular-biology sequence and cloning operations from WorkBuddy through a local MCP server.
+Internal Windows tool for molecular-biology sequence analysis and common cloning computations from WorkBuddy through a local MCP server.
 
-## Current V1.1 capabilities
+## Current V1.2 capabilities
 
 - Import GenBank / FASTA / SnapGene DNA files
 - Sequence metadata, GC, topology, feature and CDS inspection
-- Exact sequence search and extraction
-- Translation
-- Primer3 primer design
-- PCR simulation
-- Restriction-site analysis
+- Exact sequence search, extraction, and translation
+- Primer3 primer design with quality metrics
+- PCR simulation on the supplied template
+- Restriction-site analysis with circular-topology handling
 - Insert / delete / replace sequence edits with annotation remapping where possible
 - Construct-to-construct diff
-- Annotation remapping between related constructs
-- Gibson assembly
-- Golden Gate / restriction-and-ligation assembly
-- Direct ligation assembly
-- Construct validation including feature bounds and CDS reading-frame checks
+- Annotation remapping between related constructs, with stale sequence-derived qualifiers marked/removed
+- Gibson assembly for fragments that already contain terminal overlaps
+- Candidate overlap-tailed PCR primer design for Gibson assembly in a specified fragment order
+- Golden Gate enzyme/site assessment without choosing a preferred enzyme
+- Golden Gate assembly restricted to compatible type-IIS cut geometry
+- Ordinary restriction/ligation and direct ligation assembly
+- Computational construct validation including feature bounds, CDS frame, internal stops, codon-table checks, and translation-annotation consistency
 - GenBank / FASTA export
 
 WorkBuddy uses the local `gene-workbench` MCP server over stdio. No server deployment is required.
+
+## Scientific-use principle
+
+Gene Workbench separates deterministic computation from scientific judgment. Tools return calculations, candidates, warnings, and scope limits; the Skill does not force a cloning method or present computational feasibility as guaranteed wet-lab success.
 
 ## Easiest installation
 
@@ -34,10 +39,11 @@ For manual installation, download the latest Company ZIP from Releases, extract 
 
 - `WORKBUDDY_INSTALL.md` - deterministic instructions for WorkBuddy
 - `bootstrap.ps1` - one-command installer used by WorkBuddy
-- `skill/gene-workbench/SKILL.md` - WorkBuddy routing skill
+- `skill/gene-workbench/SKILL.md` - WorkBuddy routing and scientific-interpretation guidance
 - `src/gene_workbench.py` - MCP source
-- `tests/acceptance_v110.py` - end-to-end acceptance
+- `tests/acceptance_v120.py` - v1.2 end-to-end scientific acceptance
 - `release-manifest.json` - pinned release asset and checksum
+- `packaging/` - installer helper scripts
 
 ## Internal distribution
 

@@ -32,18 +32,20 @@ The script must print:
 
 ```text
 GENE_WORKBENCH_INSTALL_OK
-VERSION=1.1.0
+VERSION=1.2.0
 ```
 
 Then verify:
-- `%LOCALAPPDATA%\GeneWorkbench\GeneWorkbench.exe` exists
+- `%LOCALAPPDATA%\GeneWorkbench\GeneWorkbench-1.2.0.exe` exists
 - `~\.workbuddy\mcp.json` contains `gene-workbench`
 - `~\.workbuddy\skills\gene-workbench\SKILL.md` exists
 
 If WorkBuddy was open during installation, restart or reload WorkBuddy once so it rediscovers the MCP tools.
 
-After reload, call `tool_status` from `gene-workbench`. Expect version `1.1.0`. Then list tools and expect 20 tools. If both checks pass, report that installation and runtime discovery passed.
+After reload, call `tool_status` from `gene-workbench`. Expect version `1.2.0`. Then list tools and expect 22 tools. If both checks pass, report that installation and runtime discovery passed.
 
 ## Normal use
 
-For DNA, plasmid, vector, primer, PCR, restriction digest, cloning, Gibson, Golden Gate, ligation, construct validation, or sequence-editing requests, use the `gene-workbench` MCP tools instead of manually reasoning over long raw sequences.
+For DNA, plasmid, vector, primer, PCR, restriction digest, cloning, Gibson, Golden Gate, ligation, construct validation, or sequence-editing requests, use Gene Workbench when deterministic sequence computation would improve correctness.
+
+Do not force Gene Workbench for purely conceptual questions. Do not force a cloning method when the user's goal and constraints do not determine one. Preserve tool warnings and distinguish computational results from experimental validation.
