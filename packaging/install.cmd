@@ -2,7 +2,7 @@
 setlocal
 
 set "APPDIR=%LOCALAPPDATA%\GeneWorkbench"
-set "EXENAME=GeneWorkbench-1.2.0.exe"
+set "EXENAME=GeneWorkbench-1.2.1.exe"
 
 if not exist "%APPDIR%" mkdir "%APPDIR%"
 if not exist "%APPDIR%\skill\gene-workbench" mkdir "%APPDIR%\skill\gene-workbench"
@@ -25,5 +25,5 @@ copy /Y "%~dp0SKILL.md" "%APPDIR%\skill\gene-workbench\SKILL.md" >nul || exit /b
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%APPDIR%\configure-workbuddy.ps1" -InstallDir "%APPDIR%" -ExecutableName "%EXENAME%" || exit /b 20
 
-echo Gene Workbench 1.2.0 installed. Restart or reload WorkBuddy to load the new MCP tools.
+echo Gene Workbench 1.2.1 installed. Restart or reload WorkBuddy to load the new MCP tools.
 exit /b 0

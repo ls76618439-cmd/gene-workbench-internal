@@ -2,7 +2,7 @@
 
 Internal Windows tool for molecular-biology sequence analysis and common cloning computations from WorkBuddy through a local MCP server.
 
-## Current V1.2 capabilities
+## Current V1.2.1 capabilities
 
 - Import GenBank / FASTA / SnapGene DNA files
 - Sequence metadata, GC, topology, feature and CDS inspection
@@ -31,7 +31,7 @@ Gene Workbench separates deterministic computation from scientific judgment. Too
 
 Give WorkBuddy this repository URL and say:
 
-> 璇蜂弗鏍兼寜鐓т粨搴撴牴鐩綍鐨?WORKBUDDY_INSTALL.md 瀹夎 Gene Workbench锛屽畬鎴愬悗楠岃瘉 gene-workbench MCP 鍜?Skill 宸插畨瑁呮垚鍔熴€備笉瑕佽嚜琛屾敼瀹夎鏂规銆?
+> 閻犲洩娓瑰妤呭冀閸忕厧鐦婚柣鎾楀倻娉㈤幖瀛樻尰閻楁挳鎯勯鑲╃Э闁?WORKBUDDY_INSTALL.md 閻庣懓顦抽ˉ?Gene Workbench闁挎稑鑻悾顒勫箣閹邦剚鍊靛Δ鐘茬焷閻?gene-workbench MCP 闁?Skill 鐎瑰憡褰冮悾銊ф啑閸涱喖鐏囬柛鏃傚枂閳ь剙鍊风粭澶屾啺娴ｈ棄娈伴悶娑樻湰閺佽偐鈧懓顦抽ˉ濠囧棘鐟欏嫷鏀抽柕?
 
 For manual installation, download the latest Company ZIP from Releases, extract it, and run `install.cmd`.
 
@@ -41,7 +41,7 @@ For manual installation, download the latest Company ZIP from Releases, extract 
 - `bootstrap.ps1` - one-command installer used by WorkBuddy
 - `skill/gene-workbench/SKILL.md` - WorkBuddy routing and scientific-interpretation guidance
 - `src/gene_workbench.py` - MCP source
-- `tests/acceptance_v120.py` - v1.2 end-to-end scientific acceptance
+- `tests/acceptance_v121.py` - v1.2 end-to-end scientific acceptance
 - `release-manifest.json` - pinned release asset and checksum
 - `packaging/` - installer helper scripts
 

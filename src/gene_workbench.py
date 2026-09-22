@@ -35,7 +35,7 @@ DATA.mkdir(parents=True, exist_ok=True)
 OUTPUTS.mkdir(parents=True, exist_ok=True)
 
 mcp = FastMCP("gene-workbench")
-VERSION = "1.2.0"
+VERSION = "1.2.1"
 IUPAC_DNA = set("ACGTRYSWKMBDHVN")
 
 
@@ -247,7 +247,8 @@ def _enzyme_profile(enzyme: Any) -> dict[str, Any]:
         "blunt": bool(enzyme.is_blunt()),
         "cuts_outside_recognition_site": primary_cut_outside,
         "single_cut_pair": one_cut_pair,
-        "golden_gate_type_iis_geometry": type_iis_geometry,
+        "golden_gate_model_compatible": type_iis_geometry,
+        "golden_gate_type_iis_geometry": type_iis_geometry,  # deprecated compatibility alias
         "elucidate": enzyme.elucidate(),
     }
 
@@ -258,7 +259,7 @@ def _golden_gate_enzyme_objects(enzymes: list[str], allow_blunt: bool) -> tuple[
     incompatible = [
         p["name"]
         for p in profiles
-        if not p["golden_gate_type_iis_geometry"] or (p["blunt"] and not allow_blunt)
+        if not p["golden_gate_model_compatible"] or (p["blunt"] and not allow_blunt)
     ]
     if incompatible:
         raise ValueError(
@@ -376,7 +377,7 @@ def _mapped_location_from_boundaries(location: Any, boundary_map: dict[int, int]
 
 @mcp.tool()
 def sequence_import(path: str, label: str = "sequence") -> dict[str, Any]:
-    """Import a local FASTA, GenBank, or SnapGene .dna file into the local sequence store."""
+    """Import one local FASTA, GenBank, or SnapGene .dna file and return a sequence_id for later tools. Use this before sequence-aware operations; the source file is not modified."""
     source = Path(path)
     if not source.exists():
         raise FileNotFoundError(path)
@@ -394,7 +395,7 @@ def sequence_import(path: str, label: str = "sequence") -> dict[str, Any]:
 
 @mcp.tool()
 def sequence_info(sequence_id: str) -> dict[str, Any]:
-    """Return sequence metadata without returning the full sequence."""
+    """Return length, GC, topology, annotation count, and sequence hash for a stored sequence. Use for lightweight inspection without placing the full DNA sequence in model context."""
     record = _load(sequence_id)
     seq = str(record.seq).upper()
     gc = 100.0 * (seq.count("G") + seq.count("C")) / len(seq) if seq else 0.0
@@ -411,7 +412,7 @@ def sequence_info(sequence_id: str) -> dict[str, Any]:
 
 @mcp.tool()
 def sequence_extract(sequence_id: str, start: int, end: int, strand: int = 1) -> dict[str, Any]:
-    """Extract a 1-based inclusive interval. strand may be 1 or -1."""
+    """Extract a 1-based inclusive interval from a stored sequence on strand 1 or -1. Use when exact bases are needed for a bounded region rather than the full construct."""
     if start < 1 or end < start:
         raise ValueError("Use 1-based inclusive coordinates with end >= start")
     record = _load(sequence_id)
@@ -427,7 +428,7 @@ def sequence_extract(sequence_id: str, start: int, end: int, strand: int = 1) ->
 
 @mcp.tool()
 def sequence_find(sequence_id: str, query: str, both_strands: bool = True, max_hits: int = 100) -> dict[str, Any]:
-    """Find exact nucleotide occurrences and return 1-based coordinates."""
+    """Find exact nucleotide occurrences and return 1-based coordinates on one or both strands. This is exact sequence matching, not approximate or genome-wide similarity search."""
     record = _load(sequence_id)
     target = str(record.seq).upper()
     q = _clean_dna(query)
@@ -449,7 +450,7 @@ def sequence_find(sequence_id: str, query: str, both_strands: bool = True, max_h
 
 @mcp.tool()
 def sequence_features(sequence_id: str, feature_type: str | None = None, max_features: int = 500) -> dict[str, Any]:
-    """List annotated features with coordinates and selected qualifiers."""
+    """List annotated features, coordinates, strand, label, and note from the stored record. Use to inspect existing annotations; absence of an annotation is not evidence that a biological element is absent."""
     record = _load(sequence_id)
     rows = []
     for feat in record.features:
@@ -472,7 +473,7 @@ def sequence_features(sequence_id: str, feature_type: str | None = None, max_fea
 
 @mcp.tool()
 def sequence_replace(sequence_id: str, start: int, end: int, replacement: str, label: str = "edited") -> dict[str, Any]:
-    """Replace a 1-based inclusive interval, remap unaffected annotations, and save a new GenBank record."""
+    """Replace a 1-based inclusive interval and save a new sequence_id. Features are remapped where possible; features overlapping the edit are marked for revalidation rather than treated as unchanged."""
     record = _load(sequence_id)
     if start < 1 or end < start or end > len(record.seq):
         raise ValueError("invalid coordinates")
@@ -494,7 +495,7 @@ def sequence_replace(sequence_id: str, start: int, end: int, replacement: str, l
 
 @mcp.tool()
 def sequence_insert(sequence_id: str, position: int, insert_sequence: str, label: str = "inserted") -> dict[str, Any]:
-    """Insert DNA before a 1-based position. Use position=len+1 to append. Features are remapped."""
+    """Insert DNA before a 1-based position and save a new sequence_id. Use position=len+1 to append; annotations are remapped where possible and overlapping annotations require review."""
     record = _load(sequence_id)
     if position < 1 or position > len(record.seq) + 1:
         raise ValueError("position must be between 1 and sequence length + 1")
@@ -516,7 +517,7 @@ def sequence_insert(sequence_id: str, position: int, insert_sequence: str, label
 
 @mcp.tool()
 def sequence_delete(sequence_id: str, start: int, end: int, label: str = "deleted") -> dict[str, Any]:
-    """Delete a 1-based inclusive interval, remap unaffected annotations, and save a new record."""
+    """Delete a 1-based inclusive interval and save a new sequence_id. Annotations are remapped where possible; annotations affected by the deletion may be dropped or require review."""
     record = _load(sequence_id)
     if start < 1 or end < start or end > len(record.seq):
         raise ValueError("invalid coordinates")
@@ -537,7 +538,7 @@ def sequence_delete(sequence_id: str, start: int, end: int, label: str = "delete
 
 @mcp.tool()
 def sequence_diff(source_sequence_id: str, target_sequence_id: str, max_changes: int = 100) -> dict[str, Any]:
-    """Compare two stored sequences in their stored coordinate systems and summarize substitutions, insertions, and deletions."""
+    """Compare two stored sequences in their stored coordinate systems and summarize replacements, insertions, and deletions. Circular sequences are not origin-normalized, so coordinate rotation can appear as a large diff."""
     source_record = _load(source_sequence_id)
     target_record = _load(target_sequence_id)
     source = str(source_record.seq).upper()
@@ -585,7 +586,7 @@ def sequence_diff(source_sequence_id: str, target_sequence_id: str, max_changes:
 
 @mcp.tool()
 def feature_remap(source_sequence_id: str, target_sequence_id: str, label: str = "remapped") -> dict[str, Any]:
-    """Transfer annotations onto a related target sequence using unchanged coordinate blocks; mark features whose sequence changed."""
+    """Transfer source annotations onto a related target using unchanged sequence blocks. Use for related constructs; repetitive or rearranged sequences can make mapping ambiguous, so mapped changes are reported for review."""
     source_record = _load(source_sequence_id)
     target_record = _load(target_sequence_id)
     source = str(source_record.seq).upper()
@@ -637,7 +638,7 @@ def feature_remap(source_sequence_id: str, target_sequence_id: str, label: str =
 
 @mcp.tool()
 def sequence_translate(sequence_id: str, start: int, end: int, strand: int = 1, table: int = 1, to_stop: bool = False) -> dict[str, Any]:
-    """Translate a nucleotide interval using an NCBI translation table."""
+    """Translate a bounded nucleotide interval with an NCBI translation table on strand 1 or -1. This reports sequence translation only and does not infer expression or biological function."""
     piece = sequence_extract(sequence_id, start, end, strand)["sequence"]
     protein = str(Seq(piece).translate(table=table, to_stop=to_stop))
     return {"sequence_id": sequence_id, "start": start, "end": end, "strand": strand, "protein": protein, "aa_length": len(protein)}
@@ -645,7 +646,7 @@ def sequence_translate(sequence_id: str, start: int, end: int, strand: int = 1, 
 
 @mcp.tool()
 def restriction_analyze(sequence_id: str, enzymes: list[str]) -> dict[str, Any]:
-    """Find restriction enzyme cut sites, respecting linear versus circular topology."""
+    """Find restriction-enzyme cut sites while respecting stored linear or circular topology. Returns factual site coordinates and enzyme geometry; it does not select a preferred cloning enzyme."""
     record = _load(sequence_id)
     batch = RestrictionBatch(enzymes)
     linear = not _is_circular(record)
@@ -660,7 +661,7 @@ def restriction_analyze(sequence_id: str, enzymes: list[str]) -> dict[str, Any]:
 
 @mcp.tool()
 def primer_design(sequence_id: str, target_start: int, target_length: int, product_min: int = 120, product_max: int = 1200, num_return: int = 5) -> dict[str, Any]:
-    """Design candidate primer pairs around a 1-based target using Primer3 core and return Primer3 quality metrics."""
+    """Design candidate PCR primer pairs around a 1-based target with Primer3 core and return Primer3 quality metrics. Specificity outside the supplied template is not assessed."""
     record = _load(sequence_id)
     template = str(record.seq).upper()
     if target_start < 1 or target_length < 1 or target_start + target_length - 1 > len(template):
@@ -736,7 +737,7 @@ def pcr_simulate(
     anneal_min: int = 13,
     label: str = "pcr_product",
 ) -> dict[str, Any]:
-    """Simulate PCR with 5'-to-3' forward and reverse primers and save the product."""
+    """Simulate PCR on the supplied template with 5'-to-3' forward and reverse primers and save the predicted product. This is in-silico amplification, not a claim of wet-lab efficiency or external off-target specificity."""
     if anneal_min < 8:
         raise ValueError("anneal_min must be at least 8")
     record = _load(sequence_id)
@@ -763,7 +764,7 @@ def assembly_gibson(
     max_products: int = 10,
     label: str = "gibson",
 ) -> dict[str, Any]:
-    """Assemble fragments with Gibson-style terminal homology and save candidate products."""
+    """Assemble supplied fragments that already contain compatible terminal overlaps and save candidate Gibson-style products. This tool does not design overlaps or primers; use gibson_primer_design for that."""
     if len(sequence_ids) < 2:
         raise ValueError("Gibson assembly requires at least two fragments")
     if overlap_min < 10:
@@ -785,7 +786,7 @@ def assembly_gibson(
 
 @mcp.tool()
 def golden_gate_assess(sequence_ids: list[str], enzymes: list[str]) -> dict[str, Any]:
-    """Report enzyme cut geometry and recognition-site counts for supplied sequences without selecting a preferred enzyme."""
+    """Report restriction-enzyme recognition sites, cut geometry, and site counts for supplied sequences. Use to assess Golden Gate model compatibility without selecting a preferred enzyme or claiming experimental success."""
     if not sequence_ids:
         raise ValueError("at least one sequence is required")
     objs = _enzyme_objects(enzymes)
@@ -807,6 +808,7 @@ def golden_gate_assess(sequence_ids: list[str], enzymes: list[str]) -> dict[str,
         "sequence_ids": sequence_ids,
         "enzyme_profiles": profiles,
         "sequences": sequence_rows,
+        "deprecated_fields": {"golden_gate_type_iis_geometry": "golden_gate_model_compatible"},
         "scope": "Factual recognition/cut geometry and site counts only; this tool does not choose an enzyme or claim experimental success.",
     }
 
@@ -819,7 +821,7 @@ def gibson_primer_design(
     circular: bool = True,
     maxlink: int = 40,
 ) -> dict[str, Any]:
-    """Design candidate PCR primers with 5' homology tails for Gibson-style assembly in the supplied fragment order."""
+    """Design candidate overlap-tailed PCR primers for Gibson-style assembly in the supplied fragment order. Returns computed candidates and in-silico PCR products; external specificity and wet-lab assembly efficiency are not assessed."""
     import warnings
 
     if len(sequence_ids) < 2:
@@ -883,7 +885,7 @@ def assembly_golden_gate(
     max_products: int = 10,
     label: str = "golden_gate",
 ) -> dict[str, Any]:
-    """Run Golden Gate-style restriction/ligation using enzymes that cut outside their recognition site."""
+    """Simulate Golden Gate-style restriction/ligation for supplied sequences using enzymes whose cut geometry is compatible with this model. The caller chooses the enzyme; this tool does not determine a globally preferred method."""
     if not sequence_ids:
         raise ValueError("at least one fragment is required")
     enzyme_objects, profiles = _golden_gate_enzyme_objects(enzymes, allow_blunt)
@@ -902,6 +904,7 @@ def assembly_golden_gate(
         "product_count": len(rows),
         "circular_only": circular_only,
         "products": rows,
+        "deprecated_fields": {"golden_gate_type_iis_geometry": "golden_gate_model_compatible"},
         "scope": "Computational complete-digest/ligation assembly from the supplied sequences and enzyme definitions.",
     }
 
@@ -915,7 +918,7 @@ def assembly_ligation(
     max_products: int = 10,
     label: str = "ligation",
 ) -> dict[str, Any]:
-    """Assemble DNA by ligation. If enzymes are given, digest-and-ligate is simulated first."""
+    """Simulate DNA ligation for supplied fragments; when enzymes are provided, simulate restriction digestion followed by ligation. Use for ordinary ligation/restriction-ligation rather than Golden Gate-specific modeling."""
     if not sequence_ids:
         raise ValueError("at least one fragment is required")
     fragments = [_to_dseqrecord(_load(sid)) for sid in sequence_ids]
@@ -947,7 +950,7 @@ def assembly_ligation(
 
 @mcp.tool()
 def construct_validate(sequence_id: str, max_issues: int = 100) -> dict[str, Any]:
-    """Run computational sequence, annotation, and CDS consistency checks without claiming experimental validation."""
+    """Run computational sequence, annotation, and CDS consistency checks and report issues. A passing computational result is not experimental validation of a physical construct, expression, or biological function."""
     record = _load(sequence_id)
     seq = str(record.seq).upper()
     issues: list[dict[str, Any]] = []
@@ -1081,16 +1084,21 @@ def construct_validate(sequence_id: str, max_issues: int = 100) -> dict[str, Any
         "error_count": len(errors),
         "warning_count": len(warnings_out),
         "structural_checks_pass": len(errors) == 0,
-        "computational_checks_pass": len(errors) == 0 and len(warnings_out) == 0,
-        "overall_pass": len(errors) == 0 and len(warnings_out) == 0,
+        "computational_consistency_pass": len(errors) == 0 and len(warnings_out) == 0,
+        "computational_checks_pass": len(errors) == 0 and len(warnings_out) == 0,  # deprecated compatibility alias
+        "overall_pass": len(errors) == 0 and len(warnings_out) == 0,  # deprecated compatibility alias
         "issues": issues,
+        "deprecated_fields": {
+            "computational_checks_pass": "computational_consistency_pass",
+            "overall_pass": "computational_consistency_pass",
+        },
         "scope": "Computational consistency checks only. This is not experimental validation of expression, cloning efficiency, biological function, or sequence identity of a physical sample.",
     }
 
 
 @mcp.tool()
 def sequence_export(sequence_id: str, output_name: str, format: str = "genbank") -> dict[str, Any]:
-    """Export a stored sequence as GenBank or FASTA into the local GeneWorkbench outputs folder."""
+    """Export a stored sequence_id as GenBank or FASTA into the local outputs folder. GenBank preserves annotations; FASTA is sequence-only."""
     fmt = format.lower()
     if fmt not in {"genbank", "fasta"}:
         raise ValueError("format must be genbank or fasta")
@@ -1109,7 +1117,7 @@ def sequence_export(sequence_id: str, output_name: str, format: str = "genbank")
 
 @mcp.tool()
 def tool_status() -> dict[str, Any]:
-    """Report local Gene Workbench status and storage locations."""
+    """Report Gene Workbench version, storage locations, transport, and bundled runtime dependencies. Use for installation/runtime verification rather than biological analysis."""
     exe_dir = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
     return {
         "version": VERSION,

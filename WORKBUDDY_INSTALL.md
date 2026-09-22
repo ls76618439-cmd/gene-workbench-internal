@@ -32,18 +32,18 @@ The script must print:
 
 ```text
 GENE_WORKBENCH_INSTALL_OK
-VERSION=1.2.0
+VERSION=1.2.1
 ```
 
 Then verify:
-- `%LOCALAPPDATA%\GeneWorkbench\GeneWorkbench-1.2.0.exe` exists
+- `%LOCALAPPDATA%\GeneWorkbench\GeneWorkbench-1.2.1.exe` exists
 - `%LOCALAPPDATA%\GeneWorkbench\primer3_core.exe` exists
 - `~\.workbuddy\mcp.json` contains `gene-workbench`
 - `~\.workbuddy\skills\gene-workbench\SKILL.md` exists
 
 If WorkBuddy was open during installation, restart or reload WorkBuddy once so it rediscovers the MCP tools.
 
-After reload, call `tool_status` from `gene-workbench`. Expect version `1.2.0`. Then list tools and expect 22 tools. If both checks pass, report that installation and runtime discovery passed.
+After reload, call `tool_status` from `gene-workbench`. Expect version `1.2.1`. Then list tools and expect 22 tools. If both checks pass, report that installation and runtime discovery passed.
 
 ## Normal use
 

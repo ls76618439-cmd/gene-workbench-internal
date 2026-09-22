@@ -1,7 +1,7 @@
 {
-  "version": "1.2.0",
-  "tag": "v1.2.0",
-  "asset": "GeneWorkbench-Company-1.2.0.zip",
-  "executable": "GeneWorkbench-1.2.0.exe",
-  "sha256": "3aba0f0fe2771f02f6c224383c96e7c43a55cd458ac8c21e4facda0683a1f05d"
+  "version": "1.2.1",
+  "tag": "v1.2.1",
+  "asset": "GeneWorkbench-Company-1.2.1.zip",
+  "executable": "GeneWorkbench-1.2.1.exe",
+  "sha256": "35ac3429a2d514ffcb77c0bb166cdef5f78c65f8e16105cdc9ac3b92477254d9"
 }
