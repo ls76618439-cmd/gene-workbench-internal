@@ -22,7 +22,7 @@ From a clone of this repository, run:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\bootstrap.ps1
 ```
 
-The bootstrap will install GitHub CLI with winget if it is missing. If GitHub authentication is required for this private repository, ask the user to complete `gh auth login` once and then rerun the bootstrap.
+The repository and Release are public. The bootstrap downloads the pinned Release asset directly over HTTPS; GitHub CLI and GitHub authentication are not required.
 
 Do not manually edit `~\.workbuddy\mcp.json` unless `bootstrap.ps1` reports a failure.
 

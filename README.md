@@ -31,7 +31,7 @@ Gene Workbench separates deterministic computation from scientific judgment. Too
 
 Give WorkBuddy this repository URL and say:
 
-> 閻犲洩娓瑰妤呭冀閸忕厧鐦婚柣鎾楀倻娉㈤幖瀛樻尰閻楁挳鎯勯鑲╃Э闁?WORKBUDDY_INSTALL.md 閻庣懓顦抽ˉ?Gene Workbench闁挎稑鑻悾顒勫箣閹邦剚鍊靛Δ鐘茬焷閻?gene-workbench MCP 闁?Skill 鐎瑰憡褰冮悾銊ф啑閸涱喖鐏囬柛鏃傚枂閳ь剙鍊风粭澶屾啺娴ｈ棄娈伴悶娑樻湰閺佽偐鈧懓顦抽ˉ濠囧棘鐟欏嫷鏀抽柕?
+> 闁荤姴娲╁〒鐟邦嚕濡ゅ懎鍐€闁稿繒鍘ч惁濠氭煟閹炬鍊诲▔銏ゅ箹鐎涙ɑ灏伴柣妤佹尦閹嫰顢欓懖鈺冃梺?WORKBUDDY_INSTALL.md 闁诲海鎳撻ˇ鎶剿?Gene Workbench闂佹寧绋戦懟顖炴偩椤掑嫬绠ｉ柟閭﹀墯閸婇潧螖閻樿尙鐒烽柣?gene-workbench MCP 闂?Skill 閻庣懓鎲¤ぐ鍐偩閵娧勫晳闁告侗鍠栭悘鍥煕閺冨倸鏋傞柍褜鍓欓崐椋庣箔婢跺本鍟哄ù锝堟濞堜即鎮跺☉妯绘拱闁轰浇鍋愰埀顒傛嚀椤︽娊藟婵犲洤妫橀悷娆忓閺€鎶芥煏?
 
 For manual installation, download the latest Company ZIP from Releases, extract it, and run `install.cmd`.
 
@@ -47,4 +47,4 @@ For manual installation, download the latest Company ZIP from Releases, extract 
 
 ## Internal distribution
 
-This repository is private. A coworker needs read access to the repository. The bootstrap installs GitHub CLI automatically when possible; the coworker only needs to complete GitHub authentication once if it is not already configured.
+This repository is public so coworkers can install without GitHub authentication. The bootstrap downloads the pinned public Release asset directly, verifies SHA256, installs the local MCP runtime, and registers the bundled Skill with WorkBuddy.
